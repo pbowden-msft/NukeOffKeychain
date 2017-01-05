@@ -1,0 +1,237 @@
+#!/bin/sh
+#set -x
+
+TOOL_NAME="Microsoft Office 2016 Keychain Removal Tool"
+TOOL_VERSION="1.0"
+
+## Copyright (c) 2016 Microsoft Corp. All rights reserved.
+## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
+## Microsoft disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a 
+## particular purpose. The entire risk arising out of the use or performance of the scripts and documentation remains with you. In no event shall
+## Microsoft, its authors, or anyone else involved in the creation, production, or delivery of the scripts be liable for any damages whatsoever 
+## (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or other pecuniary 
+## loss) arising out of the use of or inability to use the sample scripts or documentation, even if Microsoft has been advised of the possibility
+## of such damages.
+## Feedback: pbowden@microsoft.com
+
+# Constants
+WORD2016PATH="/Applications/Microsoft Word.app"
+EXCEL2016PATH="/Applications/Microsoft Excel.app"
+POWERPOINT2016PATH="/Applications/Microsoft PowerPoint.app"
+OUTLOOK2016PATH="/Applications/Microsoft Outlook.app"
+ONENOTE2016PATH="/Applications/Microsoft OneNote.app"
+SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
+
+function ShowUsage {
+# Shows tool usage and parameters
+	echo $TOOL_NAME - $TOOL_VERSION
+	echo "Purpose: Removes Office 2016 for Mac keychain entries"
+	echo "Usage: NukeOffKey [--All] [--Force]"
+	echo
+	exit 0
+}
+
+# Check that all keychain-integrated applications are not running
+function CheckRunning {
+	OPENAPPS=0
+	WORDRUNSTATE=$(CheckLaunchState "$WORD2016PATH")
+	if [ "$WORDRUNSTATE" == "1" ]; then
+		OPENAPPS=$(($OPENAPPS + 1))
+	fi
+	EXCELRUNSTATE=$(CheckLaunchState "$EXCEL2016PATH")
+	if [ "$EXCELRUNSTATE" == "1" ]; then
+		OPENAPPS=$(($OPENAPPS + 1))
+	fi
+	POWERPOINTRUNSTATE=$(CheckLaunchState "$POWERPOINT2016PATH")
+	if [ "$POWERPOINTRUNSTATE" == "1" ]; then
+		OPENAPPS=$(($OPENAPPS + 1))
+	fi
+	OUTLOOKRUNSTATE=$(CheckLaunchState "$OUTLOOK2016PATH")
+	if [ "$OUTLOOKRUNSTATE" == "1" ]; then
+		OPENAPPS=$(($OPENAPPS + 1))
+	fi
+	ONENOTERUNSTATE=$(CheckLaunchState "$ONENOTE2016PATH")
+	if [ "$ONENOTERUNSTATE" == "1" ]; then
+		OPENAPPS=$(($OPENAPPS + 1))
+	fi
+	if [ "$OPENAPPS" != "0" ]; then
+		echo "1"
+	else
+		echo "0"
+	fi
+}
+
+# Checks to see if a process is running
+function CheckLaunchState {
+	APPPATH="$1"
+	local RUNNING_RESULT=$(ps ax | grep -v grep | grep "$APPPATH")
+	if [ "${#RUNNING_RESULT}" -gt 0 ]; then
+		echo "1"
+	else
+		echo "0"
+	fi
+}
+
+# Checks to see if the user has root-level permissions
+function GetSudo {
+	if [ "$EUID" != "0" ]; then
+		sudo -p "Enter administrator password: " echo
+		if [ $? -eq 0 ] ; then
+			echo "0"
+		else
+			echo "1"
+		fi
+	fi
+}
+
+# Forcibly terminates a process
+function ForceTerminate {
+	PROCESS="$1"
+	$(ps ax | grep -v grep | grep "$PROCESS" | awk '{print $1}' | xargs kill -9 2> /dev/null 1> /dev/null)
+}
+
+# Forcibly quits all Office 2016 apps
+function ForceQuit2016 {
+	ForceTerminate "$WORD2016PATH"
+	ForceTerminate "$EXCEL2016PATH"
+	ForceTerminate "$POWERPOINT2016PATH"
+	ForceTerminate "$OUTLOOK2016PATH"
+	ForceTerminate "$ONENOTE2016PATH"
+}
+
+# Checks to see if 'msoCredentialSchemeADAL' entries are present in the keychain
+function FindEntryMsoCredentialSchemeADAL {
+	/usr/bin/security find-internet-password -s 'msoCredentialSchemeADAL' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the first 'msoCredentialSchemeADAL' entry from the keychain
+function RemoveEntryMsoCredentialSchemeADAL {
+	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeADAL' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Checks to see if 'MSOpenTech.ADAL.1*' entries are present in the keychain
+function FindEntryMSOpenTechADAL1 {
+	/usr/bin/security find-generic-password -G 'MSOpenTech.ADAL.1' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the first 'MSOpenTech.ADAL.1*' entry from the keychain
+function RemoveEntryMSOpenTechADAL1 {
+	/usr/bin/security delete-generic-password -G 'MSOpenTech.ADAL.1' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Checks to see if the 'Microsoft Office Identities Cache 2' entry is present in the keychain
+function FindEntryOfficeIdCache2 {
+	/usr/bin/security find-generic-password -l 'Microsoft Office Identities Cache 2' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'Microsoft Office Identities Cache 2' entry from the keychain
+function RemoveEntryOfficeIdCache2 {
+	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Cache 2' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Checks to see if the 'Microsoft Office Identities Settings 2' entry is present in the keychain
+function FindEntryOfficeIdSettings2 {
+	/usr/bin/security find-generic-password -l 'Microsoft Office Identities Settings 2' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'Microsoft Office Identities Settings 2' entry from the keychain
+function RemoveEntryOfficeIdSettings2 {
+	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Settings 2' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+
+# Evaluate command-line arguments
+if [[ $# = 0 ]]; then
+	ShowUsage
+else
+	for KEY in "$@"
+	do
+	case $KEY in
+    	--Help|-h|--help)
+    	ShowUsage
+    	shift # past argument
+    	;;
+    	--All|-a|--all)
+    	REMOVEALL=true
+    	shift # past argument
+		;;
+		--Force|-f|--force)
+		REMOVEALL=true
+    	FORCE=true
+    	shift # past argument
+		;;
+		*)
+    	ShowUsage
+    	;;
+    esac
+	shift # past argument or value
+	done
+fi
+
+## Main
+# Start Removal Routine
+if [ $REMOVEALL ]; then
+	APPSRUNNING=$(CheckRunning)
+	if [ "$APPSRUNNING" == "1" ]; then
+		if [ $FORCE ]; then
+			ForceQuit2016
+		else
+			echo "ERROR: Office 2016 apps are open. Either close the apps, or use the '--Force' option."
+			echo
+			exit 1
+		fi
+	fi
+	
+	# Find and remove 'msoCredentialSchemeADAL' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeADAL)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryMsoCredentialSchemeADAL
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeADAL)
+	done
+	
+	# Find and remove 'MSOpenTech.ADAL.1*' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryMSOpenTechADAL1)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryMSOpenTechADAL1
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeADAL)
+	done
+	
+	# Find and remove 'Microsoft Office Identities Cache 2' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryOfficeIdCache2)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryOfficeIdCache2
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryOfficeIdCache2)
+	done
+	
+	# Find and remove 'Microsoft Office Identities Settings 2' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryOfficeIdSettings2)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryOfficeIdSettings2
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryOfficeIdSettings2)
+	done
+	
+	echo "All Microsoft Office 2016 keychain entries removed."
+	echo
+	exit 0
+fi
+	
+
+
+
+exit 0
