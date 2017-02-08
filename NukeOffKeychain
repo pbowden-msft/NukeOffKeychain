@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 2016 Keychain Removal Tool"
-TOOL_VERSION="1.1"
+TOOL_VERSION="1.2"
 
 ## Copyright (c) 2016 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -108,7 +108,19 @@ function FindEntryMsoCredentialSchemeADAL {
 # Removes the first 'msoCredentialSchemeADAL' entry from the keychain
 function RemoveEntryMsoCredentialSchemeADAL {
 	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeADAL' 2> /dev/null 1> /dev/null
+	#echo $?
+}
+
+# Checks to see if 'msoCredentialSchemeLiveId' entries are present in the keychain
+function FindEntryMsoCredentialSchemeLiveId {
+	/usr/bin/security find-internet-password -s 'msoCredentialSchemeLiveId' 2> /dev/null 1> /dev/null
 	echo $?
+}
+
+# Removes the first 'msoCredentialSchemeLiveId' entry from the keychain
+function RemoveEntryMsoCredentialSchemeLiveId {
+	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeLiveId' 2> /dev/null 1> /dev/null
+	#echo $?
 }
 
 # Checks to see if 'MSOpenTech.ADAL.1*' entries are present in the keychain
@@ -120,7 +132,7 @@ function FindEntryMSOpenTechADAL1 {
 # Removes the first 'MSOpenTech.ADAL.1*' entry from the keychain
 function RemoveEntryMSOpenTechADAL1 {
 	/usr/bin/security delete-generic-password -G 'MSOpenTech.ADAL.1' 2> /dev/null 1> /dev/null
-	echo $?
+	#echo $?
 }
 
 # Checks to see if the 'Microsoft Office Identities Cache 2' entry is present in the keychain
@@ -132,7 +144,7 @@ function FindEntryOfficeIdCache2 {
 # Removes the 'Microsoft Office Identities Cache 2' entry from the keychain
 function RemoveEntryOfficeIdCache2 {
 	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Cache 2' 2> /dev/null 1> /dev/null
-	echo $?
+	#echo $?
 }
 
 # Checks to see if the 'Microsoft Office Identities Settings 2' entry is present in the keychain
@@ -144,7 +156,7 @@ function FindEntryOfficeIdSettings2 {
 # Removes the 'Microsoft Office Identities Settings 2' entry from the keychain
 function RemoveEntryOfficeIdSettings2 {
 	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Settings 2' 2> /dev/null 1> /dev/null
-	echo $?
+	#echo $?
 }
 
 
@@ -197,6 +209,15 @@ if [ $REMOVEALL ]; then
 		RemoveEntryMsoCredentialSchemeADAL
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeADAL)
+	done
+	
+	# Find and remove 'msoCredentialSchemeLiveId' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeLiveId)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryMsoCredentialSchemeLiveId
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeLiveId)
 	done
 	
 	# Find and remove 'MSOpenTech.ADAL.1*' entries
