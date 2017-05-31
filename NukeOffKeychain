@@ -2,9 +2,9 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 2016 Keychain Removal Tool"
-TOOL_VERSION="1.2"
+TOOL_VERSION="1.3"
 
-## Copyright (c) 2016 Microsoft Corp. All rights reserved.
+## Copyright (c) 2017 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
 ## Microsoft disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a 
 ## particular purpose. The entire risk arising out of the use or performance of the scripts and documentation remains with you. In no event shall
@@ -159,6 +159,18 @@ function RemoveEntryOfficeIdSettings2 {
 	#echo $?
 }
 
+# Checks to see if the 'com.helpshift.data_com.microsoft.Outlook' entry is present in the keychain
+function FindEntryHelpShift {
+	/usr/bin/security find-generic-password -l 'com.helpshift.data_com.microsoft.Outlook' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'com.helpshift.data_com.microsoft.Outlook' entry from the keychain
+function RemoveEntryHelpShift {
+	/usr/bin/security delete-generic-password -l 'com.helpshift.data_com.microsoft.Outlook' 2> /dev/null 1> /dev/null
+	#echo $?
+}
+
 
 # Evaluate command-line arguments
 if [[ $# = 0 ]]; then
@@ -245,6 +257,15 @@ if [ $REMOVEALL ]; then
 		RemoveEntryOfficeIdSettings2
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryOfficeIdSettings2)
+	done
+
+	# Find and remove 'com.helpshift.data_com.microsoft.Outlook' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryHelpShift)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryHelpShift
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryHelpShift)
 	done
 	
 	echo "All Microsoft Office 2016 keychain entries removed."
