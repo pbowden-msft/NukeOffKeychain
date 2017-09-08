@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 2016 Keychain Removal Tool"
-TOOL_VERSION="1.3"
+TOOL_VERSION="1.4"
 
 ## Copyright (c) 2017 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -26,7 +26,10 @@ function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
 	echo "Purpose: Removes Office 2016 for Mac keychain entries"
-	echo "Usage: NukeOffKey [--All] [--Force]"
+	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force]"
+	echo "         [--Default] removes the logon, cache and ADAL keychain entries"
+	echo "         [--IRM] removes the rights management keychain entries"
+	echo "         [--All] removes logon, cache, ADAL, rights management and HelpShift keychain entries"
 	echo
 	exit 0
 }
@@ -108,7 +111,6 @@ function FindEntryMsoCredentialSchemeADAL {
 # Removes the first 'msoCredentialSchemeADAL' entry from the keychain
 function RemoveEntryMsoCredentialSchemeADAL {
 	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeADAL' 2> /dev/null 1> /dev/null
-	#echo $?
 }
 
 # Checks to see if 'msoCredentialSchemeLiveId' entries are present in the keychain
@@ -120,7 +122,6 @@ function FindEntryMsoCredentialSchemeLiveId {
 # Removes the first 'msoCredentialSchemeLiveId' entry from the keychain
 function RemoveEntryMsoCredentialSchemeLiveId {
 	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeLiveId' 2> /dev/null 1> /dev/null
-	#echo $?
 }
 
 # Checks to see if 'MSOpenTech.ADAL.1*' entries are present in the keychain
@@ -132,7 +133,6 @@ function FindEntryMSOpenTechADAL1 {
 # Removes the first 'MSOpenTech.ADAL.1*' entry from the keychain
 function RemoveEntryMSOpenTechADAL1 {
 	/usr/bin/security delete-generic-password -G 'MSOpenTech.ADAL.1' 2> /dev/null 1> /dev/null
-	#echo $?
 }
 
 # Checks to see if the 'Microsoft Office Identities Cache 2' entry is present in the keychain
@@ -144,7 +144,6 @@ function FindEntryOfficeIdCache2 {
 # Removes the 'Microsoft Office Identities Cache 2' entry from the keychain
 function RemoveEntryOfficeIdCache2 {
 	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Cache 2' 2> /dev/null 1> /dev/null
-	#echo $?
 }
 
 # Checks to see if the 'Microsoft Office Identities Settings 2' entry is present in the keychain
@@ -156,7 +155,6 @@ function FindEntryOfficeIdSettings2 {
 # Removes the 'Microsoft Office Identities Settings 2' entry from the keychain
 function RemoveEntryOfficeIdSettings2 {
 	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Settings 2' 2> /dev/null 1> /dev/null
-	#echo $?
 }
 
 # Checks to see if the 'com.helpshift.data_com.microsoft.Outlook' entry is present in the keychain
@@ -168,9 +166,29 @@ function FindEntryHelpShift {
 # Removes the 'com.helpshift.data_com.microsoft.Outlook' entry from the keychain
 function RemoveEntryHelpShift {
 	/usr/bin/security delete-generic-password -l 'com.helpshift.data_com.microsoft.Outlook' 2> /dev/null 1> /dev/null
-	#echo $?
 }
 
+# Checks to see if the 'MicrosoftOfficeRMSCredential' entry is present in the keychain
+function FindEntryRMSCredential {
+	/usr/bin/security find-generic-password -l 'MicrosoftOfficeRMSCredential' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'MicrosoftOfficeRMSCredential' entry from the keychain
+function RemoveEntryRMSCredential {
+	/usr/bin/security delete-generic-password -l 'MicrosoftOfficeRMSCredential' 2> /dev/null 1> /dev/null
+}
+
+# Checks to see if the 'MSProtection.framework.service' entry is present in the keychain
+function FindEntryMSProtection {
+	/usr/bin/security find-generic-password -l 'MSProtection.framework.service' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'MSProtection.framework.service' entry from the keychain
+function RemoveEntryMSProtection {
+	/usr/bin/security delete-generic-password -l 'MSProtection.framework.service' 2> /dev/null 1> /dev/null
+}
 
 # Evaluate command-line arguments
 if [[ $# = 0 ]]; then
@@ -183,12 +201,19 @@ else
     	ShowUsage
     	shift # past argument
     	;;
+    	--Default|-d|--default)
+    	REMOVEDEFAULT=true
+    	shift # past argument
+		;;
+    	--IRM|-i|--irm)
+    	REMOVEIRM=true
+    	shift # past argument
+		;;
     	--All|-a|--all)
     	REMOVEALL=true
     	shift # past argument
 		;;
 		--Force|-f|--force)
-		REMOVEALL=true
     	FORCE=true
     	shift # past argument
 		;;
@@ -202,18 +227,18 @@ fi
 
 ## Main
 # Start Removal Routine
-if [ $REMOVEALL ]; then
-	APPSRUNNING=$(CheckRunning)
-	if [ "$APPSRUNNING" == "1" ]; then
-		if [ $FORCE ]; then
-			ForceQuit2016
-		else
-			echo "ERROR: Office 2016 apps are open. Either close the apps, or use the '--Force' option."
-			echo
-			exit 1
-		fi
+APPSRUNNING=$(CheckRunning)
+if [ "$APPSRUNNING" == "1" ]; then
+	if [ $FORCE ]; then
+		ForceQuit2016
+	else
+		echo "ERROR: Office 2016 apps are open. Either close the apps, or use the '--Force' option."
+		echo
+		exit 1
 	fi
-	
+fi
+
+if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then	
 	# Find and remove 'msoCredentialSchemeADAL' entries
 	MAXCOUNT=0
 	KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeADAL)
@@ -258,7 +283,32 @@ if [ $REMOVEALL ]; then
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryOfficeIdSettings2)
 	done
+	
+	echo "Default keychain entries removed"
+fi
 
+if [ $REMOVEIRM ] || [ $REMOVEALL ]; then	
+	# Find and remove 'MicrosoftOfficeRMSCredential' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryRMSCredential)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryRMSCredential
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryRMSCredential)
+	done
+	
+	# Find and remove 'MSProtection.framework.service' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryMSProtection)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryMSProtection
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryMSProtection)
+	done
+	echo "Rights Management keychain entries removed"
+fi
+
+if [ $REMOVEALL ]; then
 	# Find and remove 'com.helpshift.data_com.microsoft.Outlook' entries
 	MAXCOUNT=0
 	KEYNOTPRESENT=$(FindEntryHelpShift)
@@ -267,13 +317,8 @@ if [ $REMOVEALL ]; then
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryHelpShift)
 	done
-	
-	echo "All Microsoft Office 2016 keychain entries removed."
-	echo
-	exit 0
+	echo "HelpShift keychain entries removed"
 fi
-	
 
-
-
+echo
 exit 0
