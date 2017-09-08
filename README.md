@@ -3,6 +3,6 @@
 
 Purpose: Removes Office 2016 for Mac keychain entries</br>
 Usage: `NukeOffKeychain [--Default] [--IRM] [--All] [--Force]`</br>
-          `[--Default]` removes the logon, cache and ADAL keychain entries</br>
-          `[--IRM]` removes the rights management keychain entries</br>
-          `[--All]` removes logon, cache, ADAL, rights management and HelpShift keychain entries</br>
+&nbsp;&nbsp;&nbsp;`[--Default]` removes the logon, cache and ADAL keychain entries</br>
+&nbsp;&nbsp;&nbsp;`[--IRM]` removes the rights management keychain entries</br>
+&nbsp;&nbsp;&nbsp;`[--All]` removes logon, cache, ADAL, rights management and HelpShift keychain entries</br>
