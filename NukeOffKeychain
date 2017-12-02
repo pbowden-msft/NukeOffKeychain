@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 2016 Keychain Removal Tool"
-TOOL_VERSION="1.4"
+TOOL_VERSION="2.0"
 
 ## Copyright (c) 2017 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -25,7 +25,7 @@ SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
-	echo "Purpose: Removes Office 2016 for Mac keychain entries"
+	echo "Purpose: Removes Office 2016 for Mac keychain entries for 15.x and 16.x builds"
 	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force]"
 	echo "         [--Default] removes the logon, cache and ADAL keychain entries"
 	echo "         [--IRM] removes the rights management keychain entries"
@@ -135,26 +135,59 @@ function RemoveEntryMSOpenTechADAL1 {
 	/usr/bin/security delete-generic-password -G 'MSOpenTech.ADAL.1' 2> /dev/null 1> /dev/null
 }
 
-# Checks to see if the 'Microsoft Office Identities Cache 2' entry is present in the keychain
+# Checks to see if the 'Microsoft Office Identities Cache 2' entry is present in the keychain (15.x builds)
 function FindEntryOfficeIdCache2 {
 	/usr/bin/security find-generic-password -l 'Microsoft Office Identities Cache 2' 2> /dev/null 1> /dev/null
 	echo $?
 }
 
-# Removes the 'Microsoft Office Identities Cache 2' entry from the keychain
+# Removes the 'Microsoft Office Identities Cache 2' entry from the keychain (15.x builds)
 function RemoveEntryOfficeIdCache2 {
 	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Cache 2' 2> /dev/null 1> /dev/null
 }
 
-# Checks to see if the 'Microsoft Office Identities Settings 2' entry is present in the keychain
+# Checks to see if the 'Microsoft Office Identities Cache 3' entry is present in the keychain (16.x builds)
+function FindEntryOfficeIdCache3 {
+	/usr/bin/security find-generic-password -l 'Microsoft Office Identities Cache 3' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'Microsoft Office Identities Cache 3' entry from the keychain (16.x builds)
+function RemoveEntryOfficeIdCache3 {
+	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Cache 3' 2> /dev/null 1> /dev/null
+}
+
+# Checks to see if the 'Microsoft Office Identities Settings 2' entry is present in the keychain (15.x builds)
 function FindEntryOfficeIdSettings2 {
 	/usr/bin/security find-generic-password -l 'Microsoft Office Identities Settings 2' 2> /dev/null 1> /dev/null
 	echo $?
 }
 
-# Removes the 'Microsoft Office Identities Settings 2' entry from the keychain
+# Removes the 'Microsoft Office Identities Settings 2' entry from the keychain (15.x builds)
 function RemoveEntryOfficeIdSettings2 {
 	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Settings 2' 2> /dev/null 1> /dev/null
+}
+
+# Checks to see if the 'Microsoft Office Identities Settings 3' entry is present in the keychain (16.x builds)
+function FindEntryOfficeIdSettings3 {
+	/usr/bin/security find-generic-password -l 'Microsoft Office Identities Settings 3' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'Microsoft Office Identities Settings 3' entry from the keychain (16.x builds)
+function RemoveEntryOfficeIdSettings3 {
+	/usr/bin/security delete-generic-password -l 'Microsoft Office Identities Settings 3' 2> /dev/null 1> /dev/null
+}
+
+# Checks to see if the 'Microsoft Office Ticket Cache' entry is present in the keychain (16.x builds)
+function FindEntryOfficeTicketCache {
+	/usr/bin/security find-generic-password -l 'Microsoft Office Ticket Cache' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'Microsoft Office Ticket Cache' entry from the keychain (16.x builds)
+function RemoveEntryOfficeTicketCache {
+	/usr/bin/security delete-generic-password -l 'Microsoft Office Ticket Cache' 2> /dev/null 1> /dev/null
 }
 
 # Checks to see if the 'com.helpshift.data_com.microsoft.Outlook' entry is present in the keychain
@@ -275,6 +308,15 @@ if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then
 		KEYNOTPRESENT=$(FindEntryOfficeIdCache2)
 	done
 	
+	# Find and remove 'Microsoft Office Identities Cache 3' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryOfficeIdCache3)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryOfficeIdCache3
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryOfficeIdCache3)
+	done
+	
 	# Find and remove 'Microsoft Office Identities Settings 2' entries
 	MAXCOUNT=0
 	KEYNOTPRESENT=$(FindEntryOfficeIdSettings2)
@@ -282,6 +324,24 @@ if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then
 		RemoveEntryOfficeIdSettings2
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryOfficeIdSettings2)
+	done
+	
+	# Find and remove 'Microsoft Office Identities Settings 3' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryOfficeIdSettings3)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryOfficeIdSettings3
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryOfficeIdSettings3)
+	done
+	
+	# Find and remove 'Microsoft Office Ticket Cache' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryOfficeTicketCache)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryOfficeTicketCache
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryOfficeTicketCache)
 	done
 	
 	echo "Default keychain entries removed"
