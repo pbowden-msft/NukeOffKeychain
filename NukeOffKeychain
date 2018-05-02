@@ -190,6 +190,12 @@ function RemoveEntryOfficeTicketCache {
 	/usr/bin/security delete-generic-password -l 'Microsoft Office Ticket Cache' 2> /dev/null 1> /dev/null
 }
 
+# Checks to see if the 'com.microsoft.adalcache' entry is present in the keychain (16.x builds)
+function FindEntryAdalCache {
+	/usr/bin/security find-generic-password -l 'com.microsoft.adalcache' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
 # Removes the 'com.microsoft.adalcache' entry from the keychain (16.x builds)
 function RemoveEntryAdalCache {
 	/usr/bin/security delete-generic-password -l 'com.microsoft.adalcache' 2> /dev/null 1> /dev/null
