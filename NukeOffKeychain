@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 2016 Keychain Removal Tool"
-TOOL_VERSION="2.1"
+TOOL_VERSION="2.2"
 
 ## Copyright (c) 2018 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -240,6 +240,17 @@ function RemoveEntryMSProtection {
 	/usr/bin/security delete-generic-password -l 'MSProtection.framework.service' 2> /dev/null 1> /dev/null
 }
 
+# Checks to see if the 'Exchange' entry is present in the keychain
+function FindEntryExchange {
+	/usr/bin/security find-generic-password -l 'Exchange' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'Exchange' entry from the keychain
+function RemoveEntryExchange {
+	/usr/bin/security delete-generic-password -l 'Exchange' 2> /dev/null 1> /dev/null
+}
+
 # Evaluate command-line arguments
 if [[ $# = 0 ]]; then
 	ShowUsage
@@ -369,7 +380,16 @@ if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryAdalCache)
 	done
-	
+
+	# Find and remove 'Exchange' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryExchange)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryExchange
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryExchange)
+	done
+
 	echo "Default keychain entries removed"
 fi
 
