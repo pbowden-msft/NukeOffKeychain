@@ -1,8 +1,8 @@
 #!/bin/sh
 #set -x
 
-TOOL_NAME="Microsoft Office 2016 Keychain Removal Tool"
-TOOL_VERSION="2.2"
+TOOL_NAME="Microsoft Office 2019/2016 Keychain Removal Tool"
+TOOL_VERSION="2.3"
 
 ## Copyright (c) 2018 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -25,7 +25,7 @@ SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
-	echo "Purpose: Removes Office 2016 for Mac keychain entries for 15.x and 16.x builds"
+	echo "Purpose: Removes Office 2019/2016 for Mac keychain entries for 15.x and 16.x builds"
 	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force]"
 	echo "         [--Default] removes the logon, cache and ADAL keychain entries"
 	echo "         [--IRM] removes the rights management keychain entries"
@@ -93,7 +93,7 @@ function ForceTerminate {
 	$(ps ax | grep -v grep | grep "$PROCESS" | awk '{print $1}' | xargs kill -9 2> /dev/null 1> /dev/null)
 }
 
-# Forcibly quits all Office 2016 apps
+# Forcibly quits all Office 2019/2016 apps
 function ForceQuit2016 {
 	ForceTerminate "$WORD2016PATH"
 	ForceTerminate "$EXCEL2016PATH"
@@ -293,7 +293,7 @@ if [ "$APPSRUNNING" == "1" ]; then
 	if [ $FORCE ]; then
 		ForceQuit2016
 	else
-		echo "ERROR: Office 2016 apps are open. Either close the apps, or use the '--Force' option."
+		echo "ERROR: Office 2019/2016 apps are open. Either close the apps, or use the '--Force' option."
 		echo
 		exit 1
 	fi
