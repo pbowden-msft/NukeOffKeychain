@@ -6,3 +6,4 @@ Usage: `NukeOffKeychain [--Default] [--IRM] [--All] [--Force]`</br>
 &nbsp;&nbsp;&nbsp;`[--Default]` removes the logon, cache and ADAL keychain entries</br>
 &nbsp;&nbsp;&nbsp;`[--IRM]` removes the rights management keychain entries</br>
 &nbsp;&nbsp;&nbsp;`[--All]` removes logon, cache, ADAL, rights management and HelpShift keychain entries</br>
+&nbsp;&nbsp;&nbsp;`[--Jamf]` ignores the first 3 parameters for running via Jamf</br>

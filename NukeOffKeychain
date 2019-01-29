@@ -26,10 +26,11 @@ function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
 	echo "Purpose: Removes Office 2019/2016 for Mac keychain entries for 15.x and 16.x builds"
-	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force]"
+	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force] [--Jamf]"
 	echo "         [--Default] removes the logon, cache and ADAL keychain entries"
 	echo "         [--IRM] removes the rights management keychain entries"
 	echo "         [--All] removes logon, cache, ADAL, rights management and HelpShift keychain entries"
+	echo "         [--Jamf] ignores the first 3 parameters for running via Jamf"
 	echo
 	exit 0
 }
@@ -255,6 +256,15 @@ function RemoveEntryExchange {
 if [[ $# = 0 ]]; then
 	ShowUsage
 else
+  # If running under Jamf there will be three arguments provided by Jamf, check for user provided --Jamf argument.
+  if [[ $# -gt 3 ]]; then
+    for KEY in "$@"
+    do
+      if [[ "$KEY" =~ ^(--jamf|--Jamf)$ ]]; then
+        shift 3 # Running under Jamf, ignore first three arguments
+      fi
+    done
+  fi
 	for KEY in "$@"
 	do
 	case $KEY in
@@ -272,6 +282,10 @@ else
 		;;
     	--All|-a|--all)
     	REMOVEALL=true
+    	shift # past argument
+		;;
+    	--Jamf|-j|--jamf)
+    	JAMF=true
     	shift # past argument
 		;;
 		--Force|-f|--force)
