@@ -292,6 +292,9 @@ else
     	FORCE=true
     	shift # past argument
 		;;
+		'') #ignore empty string arguments passed by Jamf
+    	shift # past argument
+		;;
 		*)
     	ShowUsage
     	;;
