@@ -2,9 +2,9 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 2019/2016 Keychain Removal Tool"
-TOOL_VERSION="2.3"
+TOOL_VERSION="2.4"
 
-## Copyright (c) 2018 Microsoft Corp. All rights reserved.
+## Copyright (c) 2019 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
 ## Microsoft disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a 
 ## particular purpose. The entire risk arising out of the use or performance of the scripts and documentation remains with you. In no event shall
@@ -26,11 +26,12 @@ function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
 	echo "Purpose: Removes Office 2019/2016 for Mac keychain entries for 15.x and 16.x builds"
-	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force] [--Jamf]"
+	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force] [--Jamf] [--MAS]"
 	echo "         [--Default] removes the logon, cache and ADAL keychain entries"
 	echo "         [--IRM] removes the rights management keychain entries"
 	echo "         [--All] removes logon, cache, ADAL, rights management and HelpShift keychain entries"
 	echo "         [--Jamf] ignores the first 3 parameters for running via Jamf"
+	echo "         [--MAS] removes the entries required for a clean CDN to Mac App Store conversion"
 	echo
 	exit 0
 }
@@ -103,24 +104,24 @@ function ForceQuit2016 {
 	ForceTerminate "$ONENOTE2016PATH"
 }
 
-# Checks to see if 'msoCredentialSchemeADAL' entries are present in the keychain
+# Checks to see if 'Microsoft Office Credentials' for ADAL entries are present in the keychain
 function FindEntryMsoCredentialSchemeADAL {
 	/usr/bin/security find-internet-password -s 'msoCredentialSchemeADAL' 2> /dev/null 1> /dev/null
 	echo $?
 }
 
-# Removes the first 'msoCredentialSchemeADAL' entry from the keychain
+# Removes the first 'Microsoft Office Credentials' for ADAL entry from the keychain
 function RemoveEntryMsoCredentialSchemeADAL {
 	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeADAL' 2> /dev/null 1> /dev/null
 }
 
-# Checks to see if 'msoCredentialSchemeLiveId' entries are present in the keychain
+# Checks to see if 'Microsoft Office Credentials' for LiveID entries are present in the keychain
 function FindEntryMsoCredentialSchemeLiveId {
 	/usr/bin/security find-internet-password -s 'msoCredentialSchemeLiveId' 2> /dev/null 1> /dev/null
 	echo $?
 }
 
-# Removes the first 'msoCredentialSchemeLiveId' entry from the keychain
+# Removes the first 'Microsoft Office Credentials' for LiveID entry from the keychain
 function RemoveEntryMsoCredentialSchemeLiveId {
 	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeLiveId' 2> /dev/null 1> /dev/null
 }
@@ -275,27 +276,31 @@ else
     	--Default|-d|--default)
     	REMOVEDEFAULT=true
     	shift # past argument
-		;;
+	;;
     	--IRM|-i|--irm)
     	REMOVEIRM=true
     	shift # past argument
-		;;
+	;;
     	--All|-a|--all)
     	REMOVEALL=true
     	shift # past argument
-		;;
+	;;
     	--Jamf|-j|--jamf)
     	JAMF=true
     	shift # past argument
-		;;
-		--Force|-f|--force)
+	;;
+	--MAS|-m|--mas)
+    	MASCONVERT=true
+    	shift # past argument
+	;;
+	--Force|-f|--force)
     	FORCE=true
     	shift # past argument
-		;;
-		'') #ignore empty string arguments passed by Jamf
+	;;
+	'') #ignore empty string arguments passed by Jamf
     	shift # past argument
-		;;
-		*)
+	;;
+	*)
     	ShowUsage
     	;;
     esac
@@ -316,7 +321,7 @@ if [ "$APPSRUNNING" == "1" ]; then
 	fi
 fi
 
-if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then	
+if [ $REMOVEDEFAULT ] || [ $REMOVEALL ] || [ $MASCONVERT ]; then	
 	# Find and remove 'msoCredentialSchemeADAL' entries
 	MAXCOUNT=0
 	KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeADAL)
@@ -335,6 +340,10 @@ if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then
 		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeLiveId)
 	done
 	
+	echo "Credential keychain entries removed"
+fi
+
+if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then	
 	# Find and remove 'MSOpenTech.ADAL.1*' entries
 	MAXCOUNT=0
 	KEYNOTPRESENT=$(FindEntryMSOpenTechADAL1)
@@ -431,7 +440,7 @@ if [ $REMOVEIRM ] || [ $REMOVEALL ]; then
 	echo "Rights Management keychain entries removed"
 fi
 
-if [ $REMOVEALL ]; then
+if [ $REMOVEALL ] || [ $MASCONVERT ]; then
 	# Find and remove 'com.helpshift.data_com.microsoft.Outlook' entries
 	MAXCOUNT=0
 	KEYNOTPRESENT=$(FindEntryHelpShift)
