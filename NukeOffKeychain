@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 2019/2016 Keychain Removal Tool"
-TOOL_VERSION="2.4"
+TOOL_VERSION="2.5"
 
 ## Copyright (c) 2019 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -339,6 +339,15 @@ if [ $REMOVEDEFAULT ] || [ $REMOVEALL ] || [ $MASCONVERT ]; then
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeLiveId)
 	done
+
+	# Find and remove 'com.microsoft.adalcache' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryAdalCache)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryAdalCache
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryAdalCache)
+	done
 	
 	echo "Credential keychain entries removed"
 fi
@@ -396,15 +405,6 @@ if [ $REMOVEDEFAULT ] || [ $REMOVEALL ]; then
 		RemoveEntryOfficeTicketCache
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryOfficeTicketCache)
-	done
-
-	# Find and remove 'com.microsoft.adalcache' entries
-	MAXCOUNT=0
-	KEYNOTPRESENT=$(FindEntryAdalCache)
-	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
-		RemoveEntryAdalCache
-		let MAXCOUNT=MAXCOUNT+1
-		KEYNOTPRESENT=$(FindEntryAdalCache)
 	done
 
 	# Find and remove 'Exchange' entries
