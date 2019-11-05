@@ -1,8 +1,8 @@
 #!/bin/sh
 #set -x
 
-TOOL_NAME="Microsoft Office 2019/2016 Keychain Removal Tool"
-TOOL_VERSION="2.5"
+TOOL_NAME="Microsoft Office 365/2019/2016 Keychain Removal Tool"
+TOOL_VERSION="2.6"
 
 ## Copyright (c) 2019 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -25,7 +25,7 @@ SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
 function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
-	echo "Purpose: Removes Office 2019/2016 for Mac keychain entries for 15.x and 16.x builds"
+	echo "Purpose: Removes Office 365/2019/2016 for Mac keychain entries for 15.x and 16.x builds"
 	echo "Usage: NukeOffKey [--Default] [--IRM] [--All] [--Force] [--Jamf] [--MAS]"
 	echo "         [--Default] removes the logon, cache and ADAL keychain entries"
 	echo "         [--IRM] removes the rights management keychain entries"
@@ -124,6 +124,17 @@ function FindEntryMsoCredentialSchemeLiveId {
 # Removes the first 'Microsoft Office Credentials' for LiveID entry from the keychain
 function RemoveEntryMsoCredentialSchemeLiveId {
 	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeLiveId' 2> /dev/null 1> /dev/null
+}
+
+# Checks to see if 'Microsoft Office Credentials' for Unknown entries are present in the keychain
+function FindEntryMsoCredentialSchemeUnknown {
+	/usr/bin/security find-internet-password -s 'msoCredentialSchemeUnknown' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the first 'Microsoft Office Credentials' for Unknown entry from the keychain
+function RemoveEntryMsoCredentialSchemeUnknown {
+	/usr/bin/security delete-internet-password -s 'msoCredentialSchemeUnknown' 2> /dev/null 1> /dev/null
 }
 
 # Checks to see if 'MSOpenTech.ADAL.1*' entries are present in the keychain
@@ -229,6 +240,17 @@ function FindEntryRMSCredential {
 # Removes the 'MicrosoftOfficeRMSCredential' entry from the keychain
 function RemoveEntryRMSCredential {
 	/usr/bin/security delete-generic-password -l 'MicrosoftOfficeRMSCredential' 2> /dev/null 1> /dev/null
+}
+
+# Checks to see if the 'com.microsoft.office.rmscache' entry is present in the keychain
+function FindEntryRMSCache {
+	/usr/bin/security find-generic-password -l 'com.microsoft.office.rmscache' 2> /dev/null 1> /dev/null
+	echo $?
+}
+
+# Removes the 'com.microsoft.office.rmscache' entry from the keychain
+function RemoveEntryRMSCache {
+	/usr/bin/security delete-generic-password -l 'com.microsoft.office.rmscache' 2> /dev/null 1> /dev/null
 }
 
 # Checks to see if the 'MSProtection.framework.service' entry is present in the keychain
@@ -340,6 +362,15 @@ if [ $REMOVEDEFAULT ] || [ $REMOVEALL ] || [ $MASCONVERT ]; then
 		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeLiveId)
 	done
 
+	# Find and remove 'msoCredentialSchemeUnknown' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeUnknown)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryMsoCredentialSchemeUnknown
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryMsoCredentialSchemeUnknown)
+	done
+
 	# Find and remove 'com.microsoft.adalcache' entries
 	MAXCOUNT=0
 	KEYNOTPRESENT=$(FindEntryAdalCache)
@@ -427,6 +458,15 @@ if [ $REMOVEIRM ] || [ $REMOVEALL ]; then
 		RemoveEntryRMSCredential
 		let MAXCOUNT=MAXCOUNT+1
 		KEYNOTPRESENT=$(FindEntryRMSCredential)
+	done
+
+	# Find and remove 'com.microsoft.office.rmscache' entries
+	MAXCOUNT=0
+	KEYNOTPRESENT=$(FindEntryRMSCache)
+	while [ "$KEYNOTPRESENT" == "0" ] || [ $MAXCOUNT -gt 20 ]; do
+		RemoveEntryRMSCache
+		let MAXCOUNT=MAXCOUNT+1
+		KEYNOTPRESENT=$(FindEntryRMSCache)
 	done
 	
 	# Find and remove 'MSProtection.framework.service' entries
